@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html utf-8>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <title>Adventure Game</title>
+    </head>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+
+    <body>
+        <canvas id="gameCanvas" width="640" height="480"></canvas>
+        <div>Adventure Game</div>
+    <script>
+    const maxWidth = 640;
+const maxHeight = 480;
+const FPS = 60;
+const moveSpeed = 10;
+
+class Atom {
+    constructor(x, y, moveSpeed) {
+        this.x = x;
+        this.y = y;
+        this.size = 10;
+        this.moveSpeed = moveSpeed;
+        this.moveUp = false;
+        this.moveDown = false;
+        this.moveRight = false;
+        this.moveLeft = false;
+    }
+
+    up() { this.y -= this.moveSpeed; }
+    down() { this.y += this.moveSpeed; }
+    left() { this.x -= this.moveSpeed; }
+    right() { this.x += this.moveSpeed; }
+
+    startUp() { this.moveUp = true; this.moveDown = false; }
+    startDown() { this.moveDown = true; this.moveUp = false; }
+    startLeft() { this.moveLeft = true; this.moveRight = false; }
+    startRight() { this.moveRight = true; this.moveLeft = false; }
+    
+    stopUp() { this.moveUp = false; }
+    stopDown() { this.moveDown = false; }
+    stopLeft() { this.moveLeft = false; }
+    stopRight() { this.moveRight = false; }
+
+    updateLocation() {
+        if(this.moveUp && this.y > 0 + this.size) {
+            this.y -= this.moveSpeed;
+        }
+        if(this.moveDown && this.y < maxHeight - this.size) {
+            this.y += this.moveSpeed;
+        }
+        if(this.moveLeft && this.x > 0 + this.size) {
+            this.x -= this.moveSpeed;
+        }
+        if(this.moveRight && this.x < maxWidth - this.size) {
+            this.x += this.moveSpeed;
+        }
+    }
+
+    update() {
+        this.updateLocation();
+    }
+
+    draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+        ctx.closePath();
+        ctx.fillStyle ='rgba(255, 0, 0, 1)';
+        ctx.fill();
+    }
+}
+
+class Game {
+
+    constructor (width, height, fps) {
+        this.canvasElement = document.getElementById("gameCanvas");
+        this.ctx = this.canvasElement.getContext("2d");
+        this.row = 0;
+        this.maxWidth = width;
+        this.maxHeight = height;
+        this.fps = fps;
+        this.setupControls();
+
+        // Store all atoms (game elements)
+        this.atoms = [];
+
+        // Add a element that we will use as the player controlled element
+        this.atoms.push(new Atom(maxWidth/2, maxHeight/2, moveSpeed))
+        this.atoms.push(new Atom(maxWidth/2, maxHeight/2, moveSpeed))
+        this.player = this.atoms[0];
+        this.initAi();
+    }
+
+    initAi() {
+        this.atoms[1].startDown();
+        this.atoms[1].update = function() {
+
+            if(this.y > maxHeight - 20) {
+                this.stopDown();
+                this.startUp();
+            }
+
+            if(this.y < 0 + 20) {
+                this.stopUp();
+                this.startDown();
+            }
+
+            this.updateLocation();
+        }
+    }
+
+    clearScreen = () => {
+        this.ctx.clearRect(0, 0, maxWidth, maxHeight); // clear canvas
+    }
+
+    drawScanLine = (row) => {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, row);
+        this.ctx.lineTo(this.maxWidth, row);
+        this.ctx.stroke();
+        this.ctx.closePath();
+    }
+
+    draw = () => {
+        this.drawScanLine(this.row);
+        this.row += 1;
+        if (this.row === maxHeight) {
+            this.row = 0;
+        }
+
+        const maxAtoms = this.atoms.length;
+        for(let i=0; i < maxAtoms; i++) {
+            this.atoms[i].draw(this.ctx);
+        }
+    }
+
+    update = () => {
+        const maxAtoms = this.atoms.length;
+        for(let i=0; i < maxAtoms; i++) {
+            this.atoms[i].update();
+        }
+    }
+
+    animate = () => {
+        this.clearScreen();
+        this.draw();
+    }
+
+    setupControls = () => {
+
+        document.addEventListener('keydown', (event) => {
+            // console.log(event.key);
+            switch (event.key) {
+                case 'w':
+                    this.player.startUp();
+                    break;
+                case 'a':
+                    this.player.startLeft();
+                    break;
+                case 's':
+                    this.player.startDown();
+                    break;
+                case 'd':
+                    this.player.startRight();
+                    break;
+                default:
+                    break;
+            }
+        }, false);
+
+        document.addEventListener('keyup', (event) => {
+            // console.log(event.key);
+            switch (event.key) {
+                case 'w':
+                    this.player.stopUp();
+                    break;
+                case 'a':
+                    this.player.stopLeft();
+                    break;
+                case 's':
+                    this.player.stopDown();
+                    break;
+                case 'd':
+                    this.player.stopRight();
+                    break;
+                default:
+                    break;
+            }
+        }, false);
+
+    }
+
+}
+
+const gameInstance = new Game(maxWidth, maxHeight, FPS);
+
+// Animation
+setInterval(() => {
+    requestAnimationFrame(gameInstance.animate);
+    gameInstance.update();
+}, 1000 / FPS);
+
+// Game loop
+setInterval(() => {
+    gameInstance.update();
+}, 100);
+
+    </script>
+    </body>
+</html
